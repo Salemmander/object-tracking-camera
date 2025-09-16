@@ -57,15 +57,18 @@ model = YOLO("yolov11n-face.pt")
 controller = PanTiltController()
 current_pan = 90
 current_tilt = 90
+controller.set_servo_angle(controller.PAN, current_pan)
+controller.set_servo_angle(controller.TILT, current_tilt)
 
+pid_pan = lib.PID_new(0.4, 0.0, 0.1)
+pid_tilt = lib.PID_new(0.4, 0.0, 0.1)
 
-pid_pan = lib.PID_new(0.8, 0.0, 0.1)
-pid_tilt = lib.PID_new(0.8, 0.0, 0.1)
+last_time = time.time()
 
 
 # endregion
 def generate_frames():
-    global current_pan, current_tilt, current_time
+    global current_pan, current_tilt, last_time
     while True:
         frame = camera.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -107,8 +110,8 @@ def generate_frames():
             delta_pan = lib.PID_compute(pid_pan, angle_error_x, dt)
             delta_tilt = lib.PID_compute(pid_tilt, angle_error_y, dt)
 
-            current_pan = max(0, min(180, current_pan - delta_pan))
-            current_tilt = max(0, min(180, current_tilt - delta_tilt))
+            current_pan = max(0, min(180, current_pan + delta_pan))
+            current_tilt = max(0, min(180, current_tilt + delta_tilt))
 
             controller.set_servo_angle(controller.PAN, current_pan)
             controller.set_servo_angle(controller.TILT, current_tilt)
@@ -160,9 +163,8 @@ if __name__ == "__main__":
     try:
         app.run(host="0.0.0.0", port=5000)
     except KeyboardInterrupt:
-        print("oops")
+        print("Shutting down...")
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        print("oops")
         controller.cleanup()
