@@ -3,9 +3,8 @@ smbus2>=0.4.3
 lgpio>=0.2.2
 Adafruit-Blinka>=8.61.2
 adafruit-circuitpython-busdevice>=5.2.13
-
-# for camera feed stream
 picamera2
 flask
 opencv-python
 ultralytics
+deep-sort-realtime
