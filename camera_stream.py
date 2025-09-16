@@ -60,8 +60,8 @@ current_tilt = 90
 controller.set_servo_angle(controller.PAN, current_pan)
 controller.set_servo_angle(controller.TILT, current_tilt)
 
-pid_pan = lib.PID_new(0.4, 0.0, 0.1)
-pid_tilt = lib.PID_new(0.4, 0.0, 0.1)
+pid_pan = lib.PID_new(0.3, 0.002, 0.1)
+pid_tilt = lib.PID_new(0.3, 0.002, 0.1)
 
 last_time = time.time()
 
@@ -74,7 +74,7 @@ def generate_frames():
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = cv2.flip(frame, 1)
 
-        results = model(frame, imgsz=320, conf=0.25, verbose=False)
+        results = model(frame, imgsz=224, conf=0.25, verbose=False)
 
         frame_yc, frame_xc = frame.shape[0] / 2, frame.shape[1] / 2
         annotated_frame = frame
@@ -96,9 +96,9 @@ def generate_frames():
             pixel_error_x = face_xc - frame_xc
             pixel_error_y = face_yc - frame_yc
             pixel_per_degree_x = frame.shape[1] / H_FOV
-            pixel__per_degree_y = frame.shape[0] / V_FOV
+            pixel_per_degree_y = frame.shape[0] / V_FOV
             angle_error_x = pixel_error_x / pixel_per_degree_x
-            angle_error_y = pixel_error_y / pixel__per_degree_y
+            angle_error_y = pixel_error_y / pixel_per_degree_y
             # print(f"Angle Error X: {angle_error_x}, Angle Error Y: {angle_error_y}")
 
             current_time = time.time()
@@ -127,6 +127,7 @@ def generate_frames():
         else:
             lib.PID_reset(pid_pan)
             lib.PID_reset(pid_tilt)
+        time.sleep(0.05)
 
         ret, buffer = cv2.imencode(".JPG", annotated_frame)
         frame_bytes = buffer.tobytes()
@@ -162,6 +163,7 @@ def index():
 if __name__ == "__main__":
     try:
         app.run(host="0.0.0.0", port=5000)
+        # generate_frames()
     except KeyboardInterrupt:
         print("Shutting down...")
     except Exception as e:
