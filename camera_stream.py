@@ -59,9 +59,12 @@ current_pan = 90
 current_tilt = 90
 controller.set_servo_angle(controller.PAN, current_pan)
 controller.set_servo_angle(controller.TILT, current_tilt)
+KP = 0.2
+KI = 0.002
+KD = 0.003
 
-pid_pan = lib.PID_new(0.3, 0.002, 0.1)
-pid_tilt = lib.PID_new(0.3, 0.002, 0.1)
+pid_pan = lib.PID_new(KP, KI, KD)
+pid_tilt = lib.PID_new(KP, KI, KD)
 
 last_time = time.time()
 
@@ -74,7 +77,7 @@ def generate_frames():
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = cv2.flip(frame, 1)
 
-        results = model(frame, imgsz=224, conf=0.25, verbose=False)
+        results = model(frame, imgsz=320, conf=0.25, verbose=False)
 
         frame_yc, frame_xc = frame.shape[0] / 2, frame.shape[1] / 2
         annotated_frame = frame
@@ -84,7 +87,7 @@ def generate_frames():
             face_xc, face_yc = results[0].boxes.xywh[0].tolist()[:2]
             annotated_frame = results[0].plot()
             cv2.circle(
-                annotated_frame, (int(face_xc), int(face_yc)), 3, (0, 0, 255), -1
+                annotated_frame, (int(face_xc), int(face_yc)), 3, (0, 255, 0), -1
             )
             face_detected = True
         except IndexError:
@@ -99,7 +102,6 @@ def generate_frames():
             pixel_per_degree_y = frame.shape[0] / V_FOV
             angle_error_x = pixel_error_x / pixel_per_degree_x
             angle_error_y = pixel_error_y / pixel_per_degree_y
-            # print(f"Angle Error X: {angle_error_x}, Angle Error Y: {angle_error_y}")
 
             current_time = time.time()
             dt = current_time - last_time
@@ -127,7 +129,7 @@ def generate_frames():
         else:
             lib.PID_reset(pid_pan)
             lib.PID_reset(pid_tilt)
-        time.sleep(0.05)
+        # time.sleep(0.05)
 
         ret, buffer = cv2.imencode(".JPG", annotated_frame)
         frame_bytes = buffer.tobytes()
