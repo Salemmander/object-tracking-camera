@@ -1,3 +1,4 @@
+from flask.sansio.scaffold import F
 from picamera2 import Picamera2
 from flask import Flask, Response
 import cv2
@@ -31,7 +32,9 @@ V_FOV = 74.0  # Vertical Field of View for Pi Camera v3
 
 camera = Picamera2()
 
-camera_config = camera.create_video_configuration()
+camera_config = camera.create_video_configuration(
+    main={"size": (640, 480), "format": "RGB888"}
+)
 camera.configure(camera_config)
 camera.start()
 
@@ -48,7 +51,8 @@ if not os.path.exists(model_path):
         print(f"Error downloading {model_path}: {e}")
         exit(1)
 
-model = YOLO("yolov11n-face.pt")
+model = YOLO(model_path)
+model.to("cpu")
 
 # endregion
 
@@ -74,10 +78,9 @@ def generate_frames():
     global current_pan, current_tilt, last_time
     while True:
         frame = camera.capture_array()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = cv2.flip(frame, 1)
 
-        results = model(frame, imgsz=320, conf=0.25, verbose=False)
+        results = model(frame, imgsz=320, conf=0.25, verbose=False, stream=False)
 
         frame_yc, frame_xc = frame.shape[0] / 2, frame.shape[1] / 2
         annotated_frame = frame
@@ -86,14 +89,9 @@ def generate_frames():
         try:
             face_xc, face_yc = results[0].boxes.xywh[0].tolist()[:2]
             annotated_frame = results[0].plot()
-            cv2.circle(
-                annotated_frame, (int(face_xc), int(face_yc)), 3, (0, 255, 0), -1
-            )
             face_detected = True
         except IndexError:
-            # Handle no detections
             pass
-        cv2.circle(annotated_frame, (int(frame_xc), int(frame_yc)), 3, (0, 0, 255), -1)
 
         if face_detected:
             pixel_error_x = face_xc - frame_xc
@@ -131,11 +129,11 @@ def generate_frames():
             lib.PID_reset(pid_tilt)
         # time.sleep(0.05)
 
-        ret, buffer = cv2.imencode(".JPG", annotated_frame)
-        frame_bytes = buffer.tobytes()
-        yield (
-            b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
+        ret, buffer = cv2.imencode(
+            ".JPG", annotated_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80]
         )
+        frame_bytes = buffer.tobytes()
+        yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n")
 
 
 # region Video Feed Route
