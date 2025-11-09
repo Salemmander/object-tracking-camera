@@ -77,6 +77,7 @@ last_time = time.time()
 def generate_frames():
     global current_pan, current_tilt, last_time
     while True:
+        start_time = time.perf_counter()
         frame = camera.capture_array()
         frame = cv2.flip(frame, 1)
 
@@ -115,6 +116,11 @@ def generate_frames():
 
             controller.set_servo_angle(controller.PAN, current_pan)
             controller.set_servo_angle(controller.TILT, current_tilt)
+
+            end_time = time.perf_counter()
+            total_ms = (end_time - start_time) * 1000
+            print(f"LATENCY: {total_ms:.1f}ms")
+
             cv2.putText(
                 annotated_frame,
                 f"Pan: {current_pan:.2f}, Tilt: {current_tilt:.2f}",
