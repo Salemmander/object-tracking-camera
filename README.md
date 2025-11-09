@@ -3,7 +3,7 @@
 **by @Salemmmander**
 
 ![demo](demo.gif)  
-*Real-time face tracking on a Raspberry Pi 5 — YOLOv11 + PID-controlled pan/tilt servos. No cloud. No lag. Just pure edge magic.*
+*Real-time face tracking on a Raspberry Pi 5 — YOLOv11 + PID-controlled pan/tilt servos.
 
 ---
 
